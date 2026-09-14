@@ -1,0 +1,757 @@
+--[[
+    AFX UI Library v6
+    premium dark rounded UI
+    Lua 5.1 compatible
+    LAST LINE MUST BE: return AFX
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+local AFX = {}
+
+local Theme = {
+    Bg        = Color3.fromRGB(17, 17, 21),
+    Sidebar   = Color3.fromRGB(24, 24, 30),
+    Card      = Color3.fromRGB(31, 31, 39),
+    CardHover = Color3.fromRGB(41, 41, 52),
+    Stroke    = Color3.fromRGB(55, 55, 68),
+    Text      = Color3.fromRGB(240, 240, 245),
+    Sub       = Color3.fromRGB(150, 150, 165),
+    Accent    = Color3.fromRGB(88, 140, 255),
+    On        = Color3.fromRGB(46, 204, 113),
+    Off       = Color3.fromRGB(58, 58, 70),
+    Knob      = Color3.fromRGB(255, 255, 255)
+}
+AFX.Theme = Theme
+
+function AFX.SetAccent(color)
+    if typeof(color) == "Color3" then Theme.Accent = color end
+end
+
+local R_MAIN = 14
+local R_CARD = 10
+local R_BTN  = 8
+
+local function tween(obj, ti, props)
+    local t = TweenService:Create(obj, ti, props)
+    t:Play()
+    return t
+end
+
+local function corner(parent, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or R_CARD)
+    c.Parent = parent
+    return c
+end
+
+local function makeDraggable(handle, target)
+    local dragging, dragStart, startPos
+    handle.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = inp.Position
+            startPos = target.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(inp)
+        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement
+        or inp.UserInputType == Enum.UserInputType.Touch) then
+            local delta = inp.Position - dragStart
+            target.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+function AFX.CreateWindow(cfg)
+    cfg = cfg or {}
+
+    local CoreGui = game:GetService("CoreGui")
+    local ParentGui
+    pcall(function() ParentGui = CoreGui end)
+    if not ParentGui then ParentGui = player:WaitForChild("PlayerGui") end
+
+    local Screen = Instance.new("ScreenGui")
+    Screen.Name = cfg.Name or "AFX"
+    Screen.ResetOnSpawn = false
+    Screen.Parent = ParentGui
+
+    local W = cfg.Width or 520
+    local H = cfg.Height or 320
+    local TOP_H = 44
+    local GAP = 6
+    local SIDE_W = 132
+
+    --========== MAIN (rounded 14)
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.fromOffset(W, H)
+    Main.Position = UDim2.new(0.5, -W/2, 0.5, -H/2)
+    Main.BackgroundColor3 = Theme.Bg
+    Main.BorderSizePixel = 0
+    Main.Visible = false
+    Main.Parent = Screen
+    corner(Main, R_MAIN)
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Color = Theme.Stroke
+    mainStroke.Thickness = 1
+    mainStroke.Parent = Main
+
+    --========== TOPBAR (rounded penuh, macam card terpisah)
+    local Top = Instance.new("Frame")
+    Top.Size = UDim2.new(1, -GAP*2, 0, TOP_H)
+    Top.Position = UDim2.new(0, GAP, 0, GAP)
+    Top.BackgroundColor3 = Theme.Sidebar
+    Top.BorderSizePixel = 0
+    Top.Parent = Main
+    corner(Top, R_MAIN)
+    makeDraggable(Top, Main)
+
+    local Icon = Instance.new("TextLabel")
+    Icon.Size = UDim2.fromOffset(24, 24)
+    Icon.Position = UDim2.new(0, 10, 0.5, -12)
+    Icon.BackgroundTransparency = 1
+    Icon.Text = cfg.Icon or "AFX"
+    Icon.TextColor3 = Theme.Accent
+    Icon.Font = Enum.Font.GothamBold
+    Icon.TextSize = cfg.Icon and 16 or 10
+    Icon.Parent = Top
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -130, 0, 18)
+    Title.Position = UDim2.new(0, 40, 0, 4)
+    Title.BackgroundTransparency = 1
+    Title.Text = cfg.Title or "Theme 'Dark'"
+    Title.TextColor3 = Theme.Text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 13
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Top
+
+    local SubTitle = Instance.new("TextLabel")
+    SubTitle.Size = UDim2.new(1, -130, 0, 14)
+    SubTitle.Position = UDim2.new(0, 40, 0, 22)
+    SubTitle.BackgroundTransparency = 1
+    SubTitle.Text = cfg.SubTitle or ("by " .. player.Name)
+    SubTitle.TextColor3 = Theme.Sub
+    SubTitle.Font = Enum.Font.Gotham
+    SubTitle.TextSize = 10
+    SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+    SubTitle.Parent = Top
+
+    local MinBtn = Instance.new("TextButton")
+    MinBtn.Size = UDim2.fromOffset(30, 24)
+    MinBtn.Position = UDim2.new(1, -72, 0.5, -12)
+    MinBtn.BackgroundColor3 = Theme.Card
+    MinBtn.Text = "-"
+    MinBtn.TextColor3 = Theme.Text
+    MinBtn.Font = Enum.Font.GothamBold
+    MinBtn.TextSize = 14
+    MinBtn.BorderSizePixel = 0
+    MinBtn.Parent = Top
+    corner(MinBtn, R_BTN)
+
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.fromOffset(30, 24)
+    CloseBtn.Position = UDim2.new(1, -38, 0.5, -12)
+    CloseBtn.BackgroundColor3 = Theme.Card
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = Theme.Text
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 12
+    CloseBtn.BorderSizePixel = 0
+    CloseBtn.Parent = Top
+    corner(CloseBtn, R_BTN)
+
+    --========== SIDEBAR (rounded card terpisah)
+    local Sidebar = Instance.new("ScrollingFrame")
+    Sidebar.Size = UDim2.new(0, SIDE_W, 1, -(TOP_H + GAP*3))
+    Sidebar.Position = UDim2.new(0, GAP, 0, TOP_H + GAP)
+    Sidebar.BackgroundColor3 = Theme.Sidebar
+    Sidebar.BorderSizePixel = 0
+    Sidebar.ScrollBarThickness = 2
+    Sidebar.ScrollBarImageColor3 = Theme.Accent
+    Sidebar.ScrollingDirection = Enum.ScrollingDirection.Y
+    Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Sidebar.Parent = Main
+    corner(Sidebar, R_MAIN)
+
+    local sLayout = Instance.new("UIListLayout")
+    sLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    sLayout.Padding = UDim.new(0, 4)
+    sLayout.Parent = Sidebar
+    local sPad = Instance.new("UIPadding")
+    sPad.PaddingTop = UDim.new(0, 6)
+    sPad.PaddingLeft = UDim.new(0, 6)
+    sPad.PaddingRight = UDim.new(0, 8)
+    sPad.PaddingBottom = UDim.new(0, 6)
+    sPad.Parent = Sidebar
+
+    --========== CONTENT (rounded card terpisah)
+    local Content = Instance.new("Frame")
+    Content.Size = UDim2.new(1, -(SIDE_W + GAP*3), 1, -(TOP_H + GAP*3))
+    Content.Position = UDim2.new(0, SIDE_W + GAP*2, 0, TOP_H + GAP)
+    Content.BackgroundColor3 = Theme.Sidebar
+    Content.BorderSizePixel = 0
+    Content.ClipsDescendants = true
+    Content.Parent = Main
+    corner(Content, R_MAIN)
+
+    --========== FLOAT BTN (rounded)
+    local FloatBtn = Instance.new("TextButton")
+    FloatBtn.Size = UDim2.fromOffset(52, 34)
+    FloatBtn.Position = UDim2.new(0.02, 0, 0.25, 0)
+    FloatBtn.BackgroundColor3 = Theme.Card
+    FloatBtn.Text = cfg.Icon or "AFX"
+    FloatBtn.TextColor3 = Theme.Accent
+    FloatBtn.Font = Enum.Font.GothamBold
+    FloatBtn.TextSize = cfg.Icon and 15 or 10
+    FloatBtn.BorderSizePixel = 0
+    FloatBtn.Parent = Screen
+    corner(FloatBtn, R_BTN)
+    local fs = Instance.new("UIStroke")
+    fs.Color = Theme.Stroke
+    fs.Thickness = 1
+    fs.Parent = FloatBtn
+    makeDraggable(FloatBtn, FloatBtn)
+
+    MinBtn.Activated:Connect(function()
+        Main.Size = Main.Size.Y.Offset > TOP_H + 10
+            and UDim2.fromOffset(W, TOP_H + GAP*2)
+            or UDim2.fromOffset(W, H)
+    end)
+    local function setVis(v)
+        Main.Visible = v
+        FloatBtn.BackgroundColor3 = v and Theme.Accent or Theme.Card
+        FloatBtn.TextColor3 = v and Color3.fromRGB(255,255,255) or Theme.Accent
+    end
+    CloseBtn.Activated:Connect(function() setVis(false) end)
+    FloatBtn.Activated:Connect(function() setVis(not Main.Visible) end)
+    UserInputService.InputBegan:Connect(function(inp, gpe)
+        if not gpe and inp.KeyCode == (cfg.Keybind or Enum.KeyCode.RightControl) then
+            setVis(not Main.Visible)
+        end
+    end)
+
+    local window = { Screen = Screen, Main = Main, tabs = {}, _active = nil }
+
+    function window:Unload()
+        Screen:Destroy()
+    end
+
+    --======================================================
+    -- TAB
+    --======================================================
+    function window:AddTab(name, icon)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 30)
+        btn.BackgroundColor3 = Theme.Card
+        btn.Text = ""
+        btn.BorderSizePixel = 0
+        btn.AutoButtonColor = false
+        btn.Parent = Sidebar
+        corner(btn, R_BTN)
+
+        local ic = Instance.new("TextLabel")
+        ic.Size = UDim2.fromOffset(22, 30)
+        ic.Position = UDim2.new(0, 6, 0, 0)
+        ic.BackgroundTransparency = 1
+        ic.Text = icon or ""
+        ic.TextColor3 = Theme.Sub
+        ic.Font = Enum.Font.Gotham
+        ic.TextSize = 14
+        ic.Parent = btn
+
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, -34, 1, 0)
+        lbl.Position = UDim2.new(0, 32, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = name
+        lbl.TextColor3 = Theme.Sub
+        lbl.Font = Enum.Font.GothamMedium
+        lbl.TextSize = 12
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = btn
+
+        local page = Instance.new("ScrollingFrame")
+        page.Size = UDim2.new(1, -12, 1, -12)
+        page.Position = UDim2.new(0, 6, 0, 6)
+        page.BackgroundTransparency = 1
+        page.BorderSizePixel = 0
+        page.ScrollBarThickness = 3
+        page.ScrollBarImageColor3 = Theme.Accent
+        page.ScrollingDirection = Enum.ScrollingDirection.Y
+        page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        page.CanvasSize = UDim2.new(0, 0, 0, 0)
+        page.Visible = false
+        page.Parent = Content
+
+        local layout = Instance.new("UIListLayout")
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, 6)
+        layout.Parent = page
+        local pad = Instance.new("UIPadding")
+        pad.PaddingTop = UDim.new(0, 2)
+        pad.PaddingRight = UDim.new(0, 6)
+        pad.PaddingBottom = UDim.new(0, 6)
+        pad.Parent = page
+
+        local function activate()
+            for _, t in pairs(window.tabs) do
+                t.page.Visible = false
+                t.btn.BackgroundColor3 = Theme.Card
+                t.lbl.TextColor3 = Theme.Sub
+                t.ic.TextColor3 = Theme.Sub
+            end
+            page.Visible = true
+            btn.BackgroundColor3 = Theme.CardHover
+            lbl.TextColor3 = Theme.Text
+            ic.TextColor3 = Theme.Accent
+        end
+
+        btn.Activated:Connect(activate)
+        if not window._active then
+            window._active = name
+            activate()
+        end
+
+        local tab = { page = page, btn = btn, lbl = lbl, ic = ic }
+
+        ----------------------------------------------------
+        function tab:AddSection(txt)
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, 0, 0, 20)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamBold
+            l.TextSize = 13
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = page
+            return l
+        end
+
+        ----------------------------------------------------
+        function tab:AddLabel(txt, col)
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, 0, 0, 18)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = col or Theme.Sub
+            l.Font = Enum.Font.Gotham
+            l.TextSize = 11
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = page
+            return l
+        end
+
+        ----------------------------------------------------
+        function tab:AddMultiLabel(txt, col)
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, 0, 0, 0)
+            l.AutomaticSize = Enum.AutomaticSize.Y
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = col or Theme.Sub
+            l.Font = Enum.Font.Gotham
+            l.TextSize = 11
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.TextYAlignment = Enum.TextYAlignment.Top
+            l.TextWrapped = true
+            l.Parent = page
+            return l
+        end
+
+        ----------------------------------------------------
+        function tab:AddImage(imageUrl, sizeX, sizeY)
+            local holder = Instance.new("Frame")
+            holder.Size = UDim2.new(1, 0, 0, sizeY or 100)
+            holder.BackgroundTransparency = 1
+            holder.Parent = page
+            local img = Instance.new("ImageLabel")
+            img.Size = UDim2.new(0, sizeX or 100, 0, sizeY or 100)
+            img.Position = UDim2.new(0.5, -(sizeX or 100)/2, 0, 0)
+            img.BackgroundTransparency = 1
+            img.Image = imageUrl
+            img.Parent = holder
+            corner(img, R_CARD)
+            return img
+        end
+
+        ----------------------------------------------------
+        function tab:AddButton(txt, cb, icon)
+            local f = Instance.new("TextButton")
+            f.Size = UDim2.new(1, 0, 0, 32)
+            f.BackgroundColor3 = Theme.Card
+            f.Text = ""
+            f.BorderSizePixel = 0
+            f.AutoButtonColor = false
+            f.Parent = page
+            corner(f, R_CARD)
+
+            if icon then
+                local ic2 = Instance.new("TextLabel")
+                ic2.Size = UDim2.fromOffset(22, 32)
+                ic2.Position = UDim2.new(0, 8, 0, 0)
+                ic2.BackgroundTransparency = 1
+                ic2.Text = icon
+                ic2.TextColor3 = Theme.Text
+                ic2.Font = Enum.Font.Gotham
+                ic2.TextSize = 13
+                ic2.Parent = f
+            end
+
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, icon and -40 or -20, 1, 0)
+            l.Position = UDim2.new(0, icon and 34 or 12, 0, 0)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamMedium
+            l.TextSize = 12
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = f
+
+            f.MouseEnter:Connect(function()
+                tween(f, TweenInfo.new(0.15), { BackgroundColor3 = Theme.CardHover })
+            end)
+            f.MouseLeave:Connect(function()
+                tween(f, TweenInfo.new(0.15), { BackgroundColor3 = Theme.Card })
+            end)
+            f.Activated:Connect(function()
+                if cb then pcall(cb) end
+            end)
+            return f
+        end
+
+        ----------------------------------------------------
+        -- TOGGLE: animated green switch
+        ----------------------------------------------------
+        function tab:AddToggle(txt, def, cb)
+            local state = def or false
+
+            local f = Instance.new("TextButton")
+            f.Size = UDim2.new(1, 0, 0, 34)
+            f.BackgroundColor3 = Theme.Card
+            f.Text = ""
+            f.BorderSizePixel = 0
+            f.AutoButtonColor = false
+            f.Parent = page
+            corner(f, R_CARD)
+
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, -90, 1, 0)
+            l.Position = UDim2.new(0, 12, 0, 0)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamMedium
+            l.TextSize = 12
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = f
+
+            local sw = Instance.new("Frame")
+            sw.Size = UDim2.fromOffset(42, 22)
+            sw.Position = UDim2.new(1, -54, 0.5, -11)
+            sw.BackgroundColor3 = state and Theme.On or Theme.Off
+            sw.BorderSizePixel = 0
+            sw.Parent = f
+            corner(sw, 11)
+
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.fromOffset(16, 16)
+            knob.Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            knob.BackgroundColor3 = Theme.Knob
+            knob.BorderSizePixel = 0
+            knob.Parent = sw
+            corner(knob, 8)
+
+            local function update(v)
+                state = v
+                tween(sw, TweenInfo.new(0.18), { BackgroundColor3 = state and Theme.On or Theme.Off })
+                tween(knob, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    { Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8) })
+            end
+
+            f.Activated:Connect(function()
+                update(not state)
+                if cb then pcall(cb, state) end
+            end)
+
+            return {
+                Set = function(v) update(v) if cb then pcall(cb, v) end end,
+                Get = function() return state end
+            }
+        end
+
+        ----------------------------------------------------
+        -- SLIDER: icon kiri/kanan + knob
+        ----------------------------------------------------
+        function tab:AddSlider(txt, minV, maxV, def, cb, iconL, iconR)
+            local value = def or minV
+
+            local f = Instance.new("Frame")
+            f.Size = UDim2.new(1, 0, 0, 44)
+            f.BackgroundColor3 = Theme.Card
+            f.BorderSizePixel = 0
+            f.Parent = page
+            corner(f, R_CARD)
+
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(1, -24, 0, 16)
+            l.Position = UDim2.new(0, 12, 0, 4)
+            l.BackgroundTransparency = 1
+            l.Text = txt .. "  -  " .. tostring(value)
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamMedium
+            l.TextSize = 12
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = f
+
+            local bar = Instance.new("Frame")
+            bar.Size = UDim2.new(1, -40, 0, 6)
+            bar.Position = UDim2.new(0, 26, 1, -15)
+            bar.BackgroundColor3 = Theme.Off
+            bar.BorderSizePixel = 0
+            bar.Parent = f
+            corner(bar, 3)
+
+            local fill = Instance.new("Frame")
+            local pct = (value - minV) / (maxV - minV)
+            fill.Size = UDim2.new(pct, 0, 1, 0)
+            fill.BackgroundColor3 = Theme.Accent
+            fill.BorderSizePixel = 0
+            fill.Parent = bar
+            corner(fill, 3)
+
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.fromOffset(16, 16)
+            knob.Position = UDim2.new(pct, -8, 0.5, -8)
+            knob.BackgroundColor3 = Theme.Knob
+            knob.BorderSizePixel = 0
+            knob.Parent = bar
+            corner(knob, 8)
+
+            if iconL then
+                local il = Instance.new("TextLabel")
+                il.Size = UDim2.fromOffset(16, 16)
+                il.Position = UDim2.new(0, 6, 0.5, -8)
+                il.BackgroundTransparency = 1
+                il.Text = iconL
+                il.TextColor3 = Theme.Sub
+                il.Font = Enum.Font.Gotham
+                il.TextSize = 11
+                il.Parent = bar
+            end
+            if iconR then
+                local ir = Instance.new("TextLabel")
+                ir.Size = UDim2.fromOffset(16, 16)
+                ir.Position = UDim2.new(1, -22, 0.5, -8)
+                ir.BackgroundTransparency = 1
+                ir.Text = iconR
+                ir.TextColor3 = Theme.Sub
+                ir.Font = Enum.Font.Gotham
+                ir.TextSize = 11
+                ir.Parent = bar
+            end
+
+            local dragging = false
+            bar.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1
+                or inp.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1
+                or inp.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(inp)
+                if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement
+                or inp.UserInputType == Enum.UserInputType.Touch) then
+                    local rel = math.clamp((inp.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                    value = math.floor(minV + (maxV - minV) * rel + 0.5)
+                    fill.Size = UDim2.new(rel, 0, 1, 0)
+                    knob.Position = UDim2.new(rel, -8, 0.5, -8)
+                    l.Text = txt .. "  -  " .. tostring(value)
+                    if cb then pcall(cb, value) end
+                end
+            end)
+
+            return {
+                Set = function(v)
+                    value = math.clamp(v, minV, maxV)
+                    local r = (value - minV) / (maxV - minV)
+                    fill.Size = UDim2.new(r, 0, 1, 0)
+                    knob.Position = UDim2.new(r, -8, 0.5, -8)
+                    l.Text = txt .. "  -  " .. tostring(value)
+                    if cb then pcall(cb, value) end
+                end,
+                Get = function() return value end
+            }
+        end
+
+        ----------------------------------------------------
+        function tab:AddInput(txt, ph, cb)
+            local f = Instance.new("Frame")
+            f.Size = UDim2.new(1, 0, 0, 34)
+            f.BackgroundColor3 = Theme.Card
+            f.BorderSizePixel = 0
+            f.Parent = page
+            corner(f, R_CARD)
+
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(0.45, 0, 1, 0)
+            l.Position = UDim2.new(0, 12, 0, 0)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamMedium
+            l.TextSize = 12
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = f
+
+            local box = Instance.new("TextBox")
+            box.Size = UDim2.new(0, 145, 0, 24)
+            box.Position = UDim2.new(1, -153, 0.5, -12)
+            box.BackgroundColor3 = Theme.Bg
+            box.TextColor3 = Theme.Text
+            box.PlaceholderText = ph or ""
+            box.PlaceholderColor3 = Theme.Sub
+            box.Text = ""
+            box.Font = Enum.Font.Gotham
+            box.TextSize = 11
+            box.BorderSizePixel = 0
+            box.Parent = f
+            corner(box, R_BTN)
+            local bs = Instance.new("UIStroke")
+            bs.Color = Theme.Stroke
+            bs.Thickness = 1
+            bs.Parent = box
+
+            box.Focused:Connect(function() bs.Color = Theme.Accent end)
+            box.FocusLost:Connect(function(e)
+                bs.Color = Theme.Stroke
+                if cb then pcall(cb, box.Text, e) end
+            end)
+            return box
+        end
+
+        ----------------------------------------------------
+        function tab:AddDropdown(txt, items, cb)
+            local selected = nil
+            local open = false
+
+            local f = Instance.new("TextButton")
+            f.Size = UDim2.new(1, 0, 0, 34)
+            f.BackgroundColor3 = Theme.Card
+            f.Text = ""
+            f.BorderSizePixel = 0
+            f.AutoButtonColor = false
+            f.Parent = page
+            corner(f, R_CARD)
+
+            local l = Instance.new("TextLabel")
+            l.Size = UDim2.new(0.5, 0, 1, 0)
+            l.Position = UDim2.new(0, 12, 0, 0)
+            l.BackgroundTransparency = 1
+            l.Text = txt
+            l.TextColor3 = Theme.Text
+            l.Font = Enum.Font.GothamMedium
+            l.TextSize = 12
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.Parent = f
+
+            local val = Instance.new("TextLabel")
+            val.Size = UDim2.new(0.45, 0, 1, 0)
+            val.Position = UDim2.new(0.5, 0, 0, 0)
+            val.BackgroundTransparency = 1
+            val.Text = "select..."
+            val.TextColor3 = Theme.Sub
+            val.Font = Enum.Font.Gotham
+            val.TextSize = 11
+            val.TextXAlignment = Enum.TextXAlignment.Right
+            val.Parent = f
+
+            local list = Instance.new("Frame")
+            list.Size = UDim2.new(1, 0, 0, 0)
+            list.AutomaticSize = Enum.AutomaticSize.Y
+            list.BackgroundColor3 = Theme.Sidebar
+            list.BorderSizePixel = 0
+            list.Visible = false
+            list.Parent = page
+
+            local ll = Instance.new("UIListLayout")
+            ll.SortOrder = Enum.SortOrder.LayoutOrder
+            ll.Padding = UDim.new(0, 3)
+            ll.Parent = list
+            local lp = Instance.new("UIPadding")
+            lp.PaddingTop = UDim.new(0, 3)
+            lp.PaddingBottom = UDim.new(0, 3)
+            lp.PaddingLeft = UDim.new(0, 3)
+            lp.PaddingRight = UDim.new(0, 3)
+            lp.Parent = list
+
+            local function build(items2)
+                for _, c in pairs(list:GetChildren()) do
+                    if c:IsA("TextButton") then c:Destroy() end
+                end
+                for _, item in pairs(items2 or {}) do
+                    local ib = Instance.new("TextButton")
+                    ib.Size = UDim2.new(1, 0, 0, 26)
+                    ib.BackgroundColor3 = Theme.Card
+                    ib.Text = item
+                    ib.TextColor3 = Theme.Text
+                    ib.Font = Enum.Font.Gotham
+                    ib.TextSize = 11
+                    ib.BorderSizePixel = 0
+                    ib.Parent = list
+                    corner(ib, R_BTN)
+                    ib.Activated:Connect(function()
+                        selected = item
+                        val.Text = item
+                        val.TextColor3 = Theme.Accent
+                        list.Visible = false
+                        open = false
+                        if cb then pcall(cb, item) end
+                    end)
+                end
+            end
+
+            f.Activated:Connect(function()
+                open = not open
+                list.Visible = open
+            end)
+
+            local dd = {
+                SetItems = function(items2) build(items2) end,
+                Get = function() return selected end
+            }
+            build(items)
+            return dd
+        end
+
+        window.tabs[name] = tab
+        return tab
+    end
+
+    return window
+end
+
+return AFX
